@@ -1,8 +1,8 @@
 /.vscode
 /.idea
 /build
-/info
 config.json
+INFO.md
 
 # Binaries for programs and plugins
 *.exe
