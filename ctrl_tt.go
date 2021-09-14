@@ -27,7 +27,7 @@ func (ctrl CtrlTt) Index(app *App, update *tgBot.Update) bool {
 	addBtn := tgBot.NewInlineKeyboardButtonData("🗓 Add", app.CallaBackData["tt.add"])
 	kbd.InlineKeyboard = append(kbd.InlineKeyboard, []tgBot.InlineKeyboardButton{addBtn})
 
-	text := "👋 Привет, я бот для удобного хранения расписания. Выбери расписание или создай новое *новое*.\n"
+	text := "👋 Привет, я бот для удобного хранения расписания. Выбери расписание или создай новое.\n"
 
 	if update.CallbackQuery != nil {
 		// Text
