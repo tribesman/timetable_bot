@@ -14,6 +14,7 @@ type CtrlTt struct {
 }
 
 func (ctrl CtrlTt) Index(app *App, update *tgBot.Update) bool {
+	var err error
 
 	timePads := app.User.GetTimetables(app.Db)
 	kbd := tgBot.InlineKeyboardMarkup{}
@@ -27,31 +28,37 @@ func (ctrl CtrlTt) Index(app *App, update *tgBot.Update) bool {
 	kbd.InlineKeyboard = append(kbd.InlineKeyboard, []tgBot.InlineKeyboardButton{addBtn})
 
 	text := "👋 Привет, я бот для удобного хранения расписания. Выбери расписание или создай новое *новое*.\n"
+
 	if update.CallbackQuery != nil {
 		// Text
 		msg := tgBot.NewEditMessageText(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, text)
 		msg.ParseMode = "markdown"
 
 		// MarkUp
-		app.Bot.Send(msg)
+		_, err = app.Bot.Send(msg)
+		NoPanic(err)
 		_kbd := tgBot.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, kbd)
-		app.Bot.Send(_kbd)
+		_, err = app.Bot.Send(_kbd)
+		NoPanic(err)
 	}
 	if update.Message != nil {
 		msg := tgBot.NewMessage(update.Message.Chat.ID, text)
 		msg.ReplyMarkup = kbd
 		msg.ParseMode = "markdown"
-		app.Bot.Send(msg)
+		_, err = app.Bot.Send(msg)
+		NoPanic(err)
 	}
 	return true
 }
 
 func (ctrl CtrlTt) Add(app *App, update *tgBot.Update) bool {
+	var err error
 	if update.CallbackQuery != nil {
 		// Text
 		msg := tgBot.NewEditMessageText(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, "Добавить новое расписание\n Введи название расписания (только буквы и числа)")
 		msg.ParseMode = "html"
-		app.Bot.Send(msg)
+		_, err = app.Bot.Send(msg)
+		NoPanic(err)
 
 		// MarkUp
 		kbd := tgBot.NewInlineKeyboardMarkup(
@@ -61,7 +68,8 @@ func (ctrl CtrlTt) Add(app *App, update *tgBot.Update) bool {
 		)
 
 		_kbd := tgBot.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, kbd)
-		app.Bot.Send(_kbd)
+		_, err = app.Bot.Send(_kbd)
+		NoPanic(err)
 		app.Step[app.User.ID] = "tt.create"
 	}
 
@@ -137,7 +145,8 @@ func (ctrl CtrlTt) Show(app *App, update *tgBot.Update) bool {
 
 		msg := tgBot.NewEditMessageText(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, _text)
 		msg.ParseMode = "html"
-		app.Bot.Send(msg)
+		_, err = app.Bot.Send(msg)
+		NoPanic(err)
 
 		kbd := tgBot.InlineKeyboardMarkup{}
 		nav := tgBot.NewInlineKeyboardRow(
@@ -168,7 +177,8 @@ func (ctrl CtrlTt) Show(app *App, update *tgBot.Update) bool {
 		kbd.InlineKeyboard = append(kbd.InlineKeyboard, actions)
 
 		_kbd := tgBot.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, kbd)
-		app.Bot.Send(_kbd)
+		_, err = app.Bot.Send(_kbd)
+		NoPanic(err)
 	}
 
 	return true
@@ -185,7 +195,8 @@ func (ctrl CtrlTt) Update(app *App, update *tgBot.Update) bool {
 
 		msg := tgBot.NewEditMessageText(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, _text)
 		msg.ParseMode = "html"
-		app.Bot.Send(msg)
+		_, err := app.Bot.Send(msg)
+		NoPanic(err)
 
 		paramsTitle := make(map[string]string)
 		paramsTitle["q"] = "1"
@@ -199,7 +210,8 @@ func (ctrl CtrlTt) Update(app *App, update *tgBot.Update) bool {
 		kbd.InlineKeyboard = append(kbd.InlineKeyboard, actions)
 
 		_kbd := tgBot.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, kbd)
-		app.Bot.Send(_kbd)
+		_, err = app.Bot.Send(_kbd)
+		NoPanic(err)
 	}
 	return true
 }
@@ -217,7 +229,8 @@ func (ctrl CtrlTt) SetAttr(app *App, update *tgBot.Update) bool {
 			_text = "Введи название"
 		}
 		msg := tgBot.NewEditMessageText(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, _text)
-		app.Bot.Send(msg)
+		_, err := app.Bot.Send(msg)
+		NoPanic(err)
 
 		// MarkUp
 		kbd := tgBot.NewInlineKeyboardMarkup(
@@ -226,7 +239,8 @@ func (ctrl CtrlTt) SetAttr(app *App, update *tgBot.Update) bool {
 			),
 		)
 		_kbd := tgBot.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, kbd)
-		app.Bot.Send(_kbd)
+		_, err = app.Bot.Send(_kbd)
+		NoPanic(err)
 
 	}
 	return true
@@ -246,6 +260,30 @@ func (ctrl CtrlTt) SaveAttr(app *App, update *tgBot.Update) bool {
 	)
 	msg := tgBot.NewMessage(update.Message.Chat.ID, _text)
 	msg.ReplyMarkup = kbd
-	app.Bot.Send(msg)
+	_, err := app.Bot.Send(msg)
+	NoPanic(err)
+	return true
+}
+
+func (ctrl CtrlTt) Rm(app *App, update *tgBot.Update) bool {
+	if update.CallbackQuery != nil {
+		_json := GetCallbackQueryData(update.CallbackQuery.Data)
+
+		_text := "Вы точно хотите удалить расписание?"
+		msg := tgBot.NewEditMessageText(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, _text)
+		_, err := app.Bot.Send(msg)
+		NoPanic(err)
+
+		// MarkUp
+		kbd := tgBot.NewInlineKeyboardMarkup(
+			tgBot.NewInlineKeyboardRow(
+				tgBot.NewInlineKeyboardButtonData("⬅️ back", createCallbackDataJson(&CallbackQueryData{Action: "tt.update", Id: _json.Id})),
+			),
+		)
+		_kbd := tgBot.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, kbd)
+		_, err = app.Bot.Send(_kbd)
+		NoPanic(err)
+
+	}
 	return true
 }

@@ -48,6 +48,7 @@ func main() {
 		"tt.update":   CtrlTt.Update,
 		"tt.sA":       CtrlTt.SetAttr,
 		"tt.saveAttr": CtrlTt.SaveAttr,
+		"tt.rm":       CtrlTt.Rm,
 		"ev.add":      CtrlEv.Add,
 		"ev.create":   CtrlEv.Create,
 		"ev.update":   CtrlEv.Update,
