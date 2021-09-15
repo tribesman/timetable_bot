@@ -42,6 +42,7 @@ func main() {
 
 	StubStorage = map[string]interface{}{
 		"tt.index":    CtrlTt.Index,
+		"tt.week":     CtrlTt.Week,
 		"tt.add":      CtrlTt.Add,
 		"tt.create":   CtrlTt.Create,
 		"tt.show":     CtrlTt.Show,
@@ -49,6 +50,7 @@ func main() {
 		"tt.sA":       CtrlTt.SetAttr,
 		"tt.saveAttr": CtrlTt.SaveAttr,
 		"tt.rm":       CtrlTt.Rm,
+		"tt.del":      CtrlTt.Delete,
 		"ev.add":      CtrlEv.Add,
 		"ev.create":   CtrlEv.Create,
 		"ev.update":   CtrlEv.Update,
