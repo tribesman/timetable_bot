@@ -96,7 +96,6 @@ func (ctrl CtrlTt) Show(app *App, update *tgBot.Update) bool {
 		_json := GetCallbackQueryData(update.CallbackQuery.Data)
 
 		model := models.Timetable{}.GetByPK(app.Db, _json.Id)
-		isAdmin := app.User.IsAdmin(app.Db, model.ID)
 
 		// Текущий день
 		_day, _ := _json.Params["day"]
@@ -113,7 +112,7 @@ func (ctrl CtrlTt) Show(app *App, update *tgBot.Update) bool {
 		date = date.AddDate(0, 0, day)
 
 		// Заголовок
-		_text := fmt.Sprintf("%s", date.Format("02 January 2006 Monday"))
+		_text := fmt.Sprintf("%s", date.Format("02 Jan 2006 Mon"))
 		if day == -1 {
 			_text = fmt.Sprintf("%s ⬅️", _text)
 		}
@@ -126,22 +125,32 @@ func (ctrl CtrlTt) Show(app *App, update *tgBot.Update) bool {
 		_text = fmt.Sprintf("📅 %s - %s\n-----\n", model.Title, _text)
 
 		events := models.Event.List(models.Event{}, app.Db, &date, model.ID)
+		timeTo := ""
 		if len(events) < 1 {
-			_text = fmt.Sprintf("%s - Пока нет ни каких дел\n", _text)
+			_text = fmt.Sprintf("%s - Пока нет никаких событий, чтобы добавить событие нажми на кнопку [🆕 new]\n", _text)
 		} else {
 			for i, event := range events {
+				if timeTo != "" {
+					hours := event.HoursDiff(event.From, timeTo)
+					if hours > 0 {
+						for i := 0; i < hours; i++ {
+							_text = fmt.Sprintf("%s - #\n", _text)
+						}
+					}
+				}
 				_text = fmt.Sprintf("%s - <b>#%d</b> %s-%s %s\n", _text, i+1, event.From, event.To, event.Title)
 				if event.Comment.Valid && event.Comment.String != "" {
 					_text = fmt.Sprintf("%s - <code>%s</code>\n", _text, event.Comment.String)
 				}
+				timeTo = event.To
 			}
 		}
 
 		// Ссылка
-		if isAdmin {
-			_text = fmt.Sprintf("%s-----\n", _text)
-
-		}
+		//isAdmin := app.User.IsAdmin(app.Db, model.ID)
+		//if isAdmin {
+		//	_text = fmt.Sprintf("%s-----\n", _text)
+		//}
 
 		msg := tgBot.NewEditMessageText(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, _text)
 		msg.ParseMode = "html"
@@ -152,6 +161,7 @@ func (ctrl CtrlTt) Show(app *App, update *tgBot.Update) bool {
 		nav := tgBot.NewInlineKeyboardRow(
 			tgBot.NewInlineKeyboardButtonData("⬅️", createCallbackDataJson(&CallbackQueryData{Action: "tt.show", Id: model.ID, Params: prev})),
 			tgBot.NewInlineKeyboardButtonData("⏺", createCallbackDataJson(&CallbackQueryData{Action: "tt.show", Id: model.ID})),
+			tgBot.NewInlineKeyboardButtonData("⏹", createCallbackDataJson(&CallbackQueryData{Action: "tt.week", Id: model.ID})),
 			tgBot.NewInlineKeyboardButtonData("➡️", createCallbackDataJson(&CallbackQueryData{Action: "tt.show", Id: model.ID, Params: next})),
 		)
 		kbd.InlineKeyboard = append(kbd.InlineKeyboard, nav)
@@ -184,6 +194,29 @@ func (ctrl CtrlTt) Show(app *App, update *tgBot.Update) bool {
 	return true
 }
 
+func (ctrl CtrlTt) Week(app *App, update *tgBot.Update) bool {
+	if update.CallbackQuery != nil {
+		_json := GetCallbackQueryData(update.CallbackQuery.Data)
+		var err error
+
+		msg := tgBot.NewEditMessageText(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, "Расписание на неделю \nВ разработке 🚧")
+		msg.ParseMode = "html"
+		_, err = app.Bot.Send(msg)
+		NoPanic(err)
+
+		// MarkUp
+		kbd := tgBot.NewInlineKeyboardMarkup(
+			tgBot.NewInlineKeyboardRow(
+				tgBot.NewInlineKeyboardButtonData("⬅️ back", createCallbackDataJson(&CallbackQueryData{Action: "tt.show", Id: _json.Id})),
+			),
+		)
+		_kbd := tgBot.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, kbd)
+		_, err = app.Bot.Send(_kbd)
+		NoPanic(err)
+	}
+	return true
+}
+
 func (ctrl CtrlTt) Update(app *App, update *tgBot.Update) bool {
 	if update.CallbackQuery != nil {
 		_json := GetCallbackQueryData(update.CallbackQuery.Data)
@@ -191,7 +224,7 @@ func (ctrl CtrlTt) Update(app *App, update *tgBot.Update) bool {
 
 		_text := model.Name() + " - редактирование"
 		//_text = fmt.Sprintf("%s\nПоделится расписанием: <code>%s?start=%s</code>", _text, app.Cfg.BotUrl, model.GetLink())
-		_text = fmt.Sprintf("%s\nПоделится расписанием: <code>%s</code>", _text, model.GetLink())
+		_text = fmt.Sprintf("%s\nПоделится расписанием: <code>%s</code> *\n*Этот текст надо отправить боту", _text, model.GetLink())
 
 		msg := tgBot.NewEditMessageText(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, _text)
 		msg.ParseMode = "html"
@@ -278,12 +311,21 @@ func (ctrl CtrlTt) Rm(app *App, update *tgBot.Update) bool {
 		kbd := tgBot.NewInlineKeyboardMarkup(
 			tgBot.NewInlineKeyboardRow(
 				tgBot.NewInlineKeyboardButtonData("⬅️ back", createCallbackDataJson(&CallbackQueryData{Action: "tt.update", Id: _json.Id})),
+				tgBot.NewInlineKeyboardButtonData("❌ yes", createCallbackDataJson(&CallbackQueryData{Action: "tt.del", Id: _json.Id})),
 			),
 		)
 		_kbd := tgBot.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, kbd)
 		_, err = app.Bot.Send(_kbd)
 		NoPanic(err)
+	}
+	return true
+}
 
+func (ctrl CtrlTt) Delete(app *App, update *tgBot.Update) bool {
+	if update.CallbackQuery != nil {
+		_json := GetCallbackQueryData(update.CallbackQuery.Data)
+		app.Db.Where("user_id = ? AND timetable_id", app.User.ID, _json.Id).Delete(&models.UserTimetable{})
+		ctrl.Index(app, update)
 	}
 	return true
 }
