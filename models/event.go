@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -78,6 +79,32 @@ func (model Event) Show(db *gorm.DB) string {
 		text = fmt.Sprintf("%s\n<code>%s</code>", text, model.Comment.String)
 	}
 	return text
+}
+
+// HM получаем часы и минуты
+func (model Event) HM(time string) (int, int) {
+	hour := 0
+	minute := 0
+	_time := strings.Split(time, ":")
+	if len(_time) > 0 {
+		hour, _ = strconv.Atoi(_time[0])
+	}
+	if len(_time) > 1 {
+		minute, _ = strconv.Atoi(_time[1])
+	}
+	return hour, minute
+}
+
+// HoursDiff разница в часах
+func (model Event) HoursDiff(time string, sub string) int {
+	diff := 0
+	timeH, timeM := model.HM(time)
+	subH, subM := model.HM(sub)
+	diff = timeH - subH
+	if timeM-subM < 0 {
+		diff--
+	}
+	return diff
 }
 
 // List События на выбранный день
