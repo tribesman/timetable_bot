@@ -18,6 +18,12 @@ jobs:
       with:
         go-version: 1.17
     - name: Ls
-      run: ls -alh
+      run: |
+        ls -alh
+        go get -u gorm.io/gorm
+        go get -u gorm.io/driver/mysql
+        go get -u github.com/google/uuid
+        go get -u github.com/go-telegram-bot-api/telegram-bot-api
+        go get -u github.com/go-gormigrate/gormigrate
     - name: Build
       run: GO111MODULE=auto GOOS=linux GOARCH=amd64 go build -o ./build/linux64/timetable_bot
