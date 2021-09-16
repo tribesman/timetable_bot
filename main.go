@@ -24,13 +24,16 @@ type CallbackQueryData struct {
 var StubStorage = stubMapping{}
 
 func main() {
+
 	app := App{
+		Date:          make(map[int]time.Time),
 		Step:          make(map[int]string),
 		TimePadID:     make(map[int]int),
 		EventID:       make(map[int]int),
 		Query:         make(map[int]string),
 		CallaBackData: make(map[string]string),
 	}
+	app.WeekDays = map[int]string{0: "Вс", 1: "Пн", 2: "Вт", 3: "Ср", 4: "Чт", 5: "Пт", 6: "Сб"}
 
 	Start(&app)
 
@@ -79,6 +82,7 @@ func main() {
 			from = update.Message.From
 		}
 		app.User = models.User{}.GetOrInsert(app.Db, from.ID, from.UserName)
+		CheckUserDate(&app)
 
 		// Обработка CallbackQuery
 		if update.CallbackQuery != nil {

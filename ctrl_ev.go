@@ -27,9 +27,11 @@ func (ctrl CtrlEv) Add(app *App, update *tgBot.Update) bool {
 		NoPanic(err)
 
 		// MarkUp
+		params := make(map[string]string)
+		params["day"] = "10"
 		kbd := tgBot.NewInlineKeyboardMarkup(
 			tgBot.NewInlineKeyboardRow(
-				tgBot.NewInlineKeyboardButtonData("⬅️ back", createCallbackDataJson(&CallbackQueryData{Action: "tt.show", Id: _json.Id})),
+				tgBot.NewInlineKeyboardButtonData("⬅️ back", createCallbackDataJson(&CallbackQueryData{Action: "tt.show", Id: _json.Id, Params: params})),
 			),
 		)
 
@@ -51,7 +53,7 @@ func (ctrl CtrlEv) Create(app *App, update *tgBot.Update) bool {
 	event.From = fmt.Sprintf("%s:00", t.Format("15"))
 	event.To = fmt.Sprintf("%s:00", t.Add(time.Hour*1).Format("15"))
 
-	weekday := int(time.Now().Weekday())
+	weekday := int(app.Date[app.User.ID].Weekday())
 	switch {
 	case weekday == 0:
 		event.Sun = 1
@@ -75,9 +77,11 @@ func (ctrl CtrlEv) Create(app *App, update *tgBot.Update) bool {
 	app.Step[app.User.ID] = ""
 	app.TimePadID[app.User.ID] = 0
 
+	params := make(map[string]string)
+	params["day"] = "10"
 	kbd := tgBot.NewInlineKeyboardMarkup(
 		tgBot.NewInlineKeyboardRow(
-			tgBot.NewInlineKeyboardButtonData("⬅️ back", createCallbackDataJson(&CallbackQueryData{Action: "ev.update", Id: event.ID})),
+			tgBot.NewInlineKeyboardButtonData("⬅️ back", createCallbackDataJson(&CallbackQueryData{Action: "ev.update", Id: event.ID, Params: params})),
 		),
 	)
 	text := "Событие добавленно, перейти к редактированию\n"
@@ -107,7 +111,8 @@ func (ctrl CtrlEv) Update(app *App, update *tgBot.Update) bool {
 		paramsTitle["q"] = "1"
 		paramsComment := make(map[string]string)
 		paramsComment["q"] = "2"
-
+		paramsBack := make(map[string]string)
+		paramsBack["day"] = "10"
 		// MarkUp
 		kbd := tgBot.NewInlineKeyboardMarkup(
 			tgBot.NewInlineKeyboardRow(
@@ -127,7 +132,7 @@ func (ctrl CtrlEv) Update(app *App, update *tgBot.Update) bool {
 				tgBot.NewInlineKeyboardButtonData("📝 comment", createCallbackDataJson(&CallbackQueryData{Action: "ev.sA", Id: event.ID, Params: paramsComment})),
 			),
 			tgBot.NewInlineKeyboardRow(
-				tgBot.NewInlineKeyboardButtonData("⬅️ back", createCallbackDataJson(&CallbackQueryData{Action: "tt.show", Id: event.TimetableID})),
+				tgBot.NewInlineKeyboardButtonData("⬅️ back", createCallbackDataJson(&CallbackQueryData{Action: "tt.show", Id: event.TimetableID, Params: paramsBack})),
 			),
 		)
 

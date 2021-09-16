@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"./models"
 	tgBot "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -19,6 +20,7 @@ import (
 type App struct {
 	Cfg           Config            `json:"cfg"`
 	Db            *gorm.DB          `json:"db"`
+	Date          map[int]time.Time `json:"date"`
 	Step          map[int]string    `json:"step"`
 	TimePadID     map[int]int       `json:"time_pad_id"`
 	EventID       map[int]int       `json:"event_id"`
@@ -26,6 +28,7 @@ type App struct {
 	User          models.User       `json:"user"`
 	CallaBackData map[string]string `json:"callback_data"`
 	Bot           tgBot.BotAPI
+	WeekDays      map[int]string
 }
 
 // Config Настройки
@@ -139,6 +142,13 @@ func GetCallbackQueryData(data string) CallbackQueryData {
 	var _json CallbackQueryData
 	_ = json.Unmarshal([]byte(data), &_json)
 	return _json
+}
+
+// CheckUserDate дата для текущего пользователя
+func CheckUserDate(app *App) {
+	if _, ok := app.Date[app.User.ID]; !ok {
+		app.Date[app.User.ID] = time.Now()
+	}
 }
 
 func Panic(err error) {

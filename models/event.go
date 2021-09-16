@@ -107,10 +107,14 @@ func (model Event) HoursDiff(time string, sub string) int {
 	return diff
 }
 
-// List События на выбранный день
+// List события на выбранный день
 func (model Event) List(db *gorm.DB, date *time.Time, ttId int) []Event {
+	return model.ListWeekDay(db, int(date.Weekday()), ttId)
+}
+
+// ListWeekDay события на текущий день недели
+func (model Event) ListWeekDay(db *gorm.DB, weekday int, ttId int) []Event {
 	var models []Event
-	weekday := int(date.Weekday())
 	search := ""
 	switch {
 	case weekday == 0:

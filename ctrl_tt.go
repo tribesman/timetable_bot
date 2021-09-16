@@ -1,12 +1,11 @@
 package main
 
 import (
+	"./models"
 	"fmt"
+	tgBot "github.com/go-telegram-bot-api/telegram-bot-api"
 	"strconv"
 	"time"
-
-	"./models"
-	tgBot "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 // CtrlTt Расписание
@@ -92,24 +91,30 @@ func (ctrl CtrlTt) Create(app *App, update *tgBot.Update) bool {
 }
 
 func (ctrl CtrlTt) Show(app *App, update *tgBot.Update) bool {
+	var date time.Time
 	if update.CallbackQuery != nil {
 		_json := GetCallbackQueryData(update.CallbackQuery.Data)
-
 		model := models.Timetable{}.GetByPK(app.Db, _json.Id)
 
-		// Текущий день
 		_day, _ := _json.Params["day"]
 		day, err := strconv.Atoi(_day)
 		if err != nil {
 			day = 0
 		}
 		next := make(map[string]string)
-		next["day"] = fmt.Sprint(day + 1)
+		next["day"] = "+1" //fmt.Sprint(day + 1)
 		prev := make(map[string]string)
-		prev["day"] = fmt.Sprint(day - 1)
+		prev["day"] = "-1" //fmt.Sprint(day - 1)
 
-		date := time.Now()
-		date = date.AddDate(0, 0, day)
+		if day != 0 {
+			if day < 2 {
+				app.Date[app.User.ID] = app.Date[app.User.ID].AddDate(0, 0, day)
+			}
+			date = app.Date[app.User.ID]
+		} else {
+			app.Date[app.User.ID] = time.Now()
+			date = app.Date[app.User.ID]
+		}
 
 		// Заголовок
 		_text := fmt.Sprintf("%s", date.Format("02 Jan 2006 Mon"))
@@ -197,17 +202,51 @@ func (ctrl CtrlTt) Show(app *App, update *tgBot.Update) bool {
 func (ctrl CtrlTt) Week(app *App, update *tgBot.Update) bool {
 	if update.CallbackQuery != nil {
 		_json := GetCallbackQueryData(update.CallbackQuery.Data)
+		model := models.Timetable{}.GetByPK(app.Db, _json.Id)
 		var err error
+		date := time.Now()
+		_, w := date.ISOWeek()
 
-		msg := tgBot.NewEditMessageText(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, "Расписание на неделю \nВ разработке 🚧")
+		_text := fmt.Sprintf("📅 %s - нед. %d д. %d\n", model.Title, w, date.YearDay())
+		d := 0
+		for d > -1 {
+			d++
+			if d == 7 {
+				d = 0
+			}
+			timeTo := ""
+			_text = fmt.Sprintf("%s\n>> %s\n", _text, app.WeekDays[d])
+			events := models.Event{}.ListWeekDay(app.Db, d, model.ID)
+			for i, event := range events {
+				if timeTo != "" {
+					hours := event.HoursDiff(event.From, timeTo)
+					if hours > 0 {
+						for i := 0; i < hours; i++ {
+							_text = fmt.Sprintf("%s - #\n", _text)
+						}
+					}
+				}
+				_text = fmt.Sprintf("%s - <b>#%d</b> %s-%s %s\n", _text, i+1, event.From, event.To, event.Title)
+				if event.Comment.Valid && event.Comment.String != "" {
+					_text = fmt.Sprintf("%s - <code>%s</code>\n", _text, event.Comment.String)
+				}
+				timeTo = event.To
+			}
+			if d == 0 {
+				d = -1
+			}
+		}
+		msg := tgBot.NewEditMessageText(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, _text)
 		msg.ParseMode = "html"
 		_, err = app.Bot.Send(msg)
 		NoPanic(err)
 
 		// MarkUp
+		paramsBack := make(map[string]string)
+		paramsBack["day"] = "10"
 		kbd := tgBot.NewInlineKeyboardMarkup(
 			tgBot.NewInlineKeyboardRow(
-				tgBot.NewInlineKeyboardButtonData("⬅️ back", createCallbackDataJson(&CallbackQueryData{Action: "tt.show", Id: _json.Id})),
+				tgBot.NewInlineKeyboardButtonData("⬅️ back", createCallbackDataJson(&CallbackQueryData{Action: "tt.show", Id: _json.Id, Params: paramsBack})),
 			),
 		)
 		_kbd := tgBot.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, kbd)
