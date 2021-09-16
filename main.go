@@ -84,8 +84,9 @@ func main() {
 		app.User = models.User{}.GetOrInsert(app.Db, from.ID, from.UserName)
 		CheckUserDate(&app)
 
-		// Обработка CallbackQuery
+		// обработка CallbackQuery
 		if update.CallbackQuery != nil {
+			app.Step[app.User.ID] = "" // сброс шага
 			log.Printf("%v\n", update.CallbackQuery.Data)
 			callbackJson := GetCallbackQueryData(update.CallbackQuery.Data)
 
@@ -102,6 +103,7 @@ func main() {
 			continue
 		}
 
+		// обработка след шага
 		if app.Step[app.User.ID] != "" {
 			if CallHelper(app.Step[app.User.ID], &app, &update) == true {
 				continue
