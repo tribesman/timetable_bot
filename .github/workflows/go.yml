@@ -17,6 +17,7 @@ jobs:
       uses: actions/setup-go@v2
       with:
         go-version: 1.17
-
+    - name: Ls
+      run: ls -alh
     - name: Build
       run: GOOS=linux GOARCH=amd64 go build -o ./build/linux64/timetable_bot
