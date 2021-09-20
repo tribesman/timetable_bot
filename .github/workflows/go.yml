@@ -22,4 +22,4 @@ jobs:
         go get -u github.com/go-gormigrate/gormigrate/v2
         go get -u github.com/go-telegram-bot-api/telegram-bot-api;
         go get -u github.com/google/uuid
-        GOOS=linux GOARCH=amd64 go build -o build/linux/timetable_bot
+        GO111MODULE=auto GOOS=linux GOARCH=amd64 go build -o build/linux/timetable_bot
